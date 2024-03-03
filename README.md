@@ -1,3 +1,7 @@
+## Changes from the forked repository
+#### Chien. (Mar. 03. 2024): 
+1. Enalbe the use of OpenCV 4 and above <br />
+2. Automatically do geometric and photometric calibration on a sequence of input images <br />
 
 
 # Install
