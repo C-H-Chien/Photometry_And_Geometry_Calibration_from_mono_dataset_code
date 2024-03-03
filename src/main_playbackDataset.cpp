@@ -28,30 +28,23 @@
  */
 
 
-#include "opencv2/opencv.hpp"
-
-
 #include <locale.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-
-
+#include "opencv2/opencv.hpp"
 #include<opencv2/core/core.hpp>
 #include<opencv2/highgui/highgui.hpp>
 
 #include "BenchmarkDatasetReader.h"
+#include "definitions.hpp"
 
 int main( int argc, char** argv )
 {
 	setlocale(LC_ALL, "");
 
 	std::string dataset = argv[1];
-
-
-
-
 	printf("Playback dataset %s!\n", dataset.c_str());
 
 	DatasetReader* reader = new DatasetReader(dataset);
@@ -69,61 +62,114 @@ int main( int argc, char** argv )
 	printf("Original Images: %d x %d. omega=%f K:\n",dim_org[0], dim_org[1], omega);
 	std::cout << K_org << "\n\n";
 
+	std::string Image_Extension = ".png";
 
+	//> TODO: change the following image write code to write to the path specified by argv[2]
 	if(argc > 2)
 	{
-		printf("Saving undistorted Dataset to here!\n");
+		std::string output_path = argv[2];
+		printf("Saving undistorted Dataset to %s!\n", output_path.c_str());
 		for(int i=0;i<reader->getNumImages();i++)
 		{
+			std::string Path_to_Write_Calib_Image = OUTPUT_IMAGE_WRITE;
+
 			ExposureImage* I = reader->getImage(i, true, false, false, false);
 			char buf[1000];
 			snprintf(buf, 1000, "%05d.jpg", i);
-			cv::imwrite(buf, cv::Mat(I->h, I->w, CV_32F, I->image));
+
+			// cv::imwrite(buf, cv::Mat(I->h, I->w, CV_32F, I->image));
+			// delete I;
+
+			std::string fileIndx = std::to_string(i);
+			std::string padded_fileName = std::string(6 - std::min(6, (int)(fileIndx.length())), '0') + fileIndx + Image_Extension;
+			Path_to_Write_Calib_Image.append(padded_fileName);
+			std::cout << "Writing image to " << Path_to_Write_Calib_Image << std::endl;
+			cv::imwrite(Path_to_Write_Calib_Image, cv::Mat(I->h, I->w, CV_32F, I->image));
+
 			delete I;
 		}
 		exit(0);
 	}
-
-
-
-
-
 
 	bool autoPlay = false;
 	bool rect = false;
 	bool removeGamma = false;
 	bool removeVignette = false;
 	bool killOverexposed = false;
+    
+	if (INTERACTIVE_MODE) {
 
-
-	for(int i=0;i<reader->getNumImages();i++)
-	{
-		while(true)
+		//> Interactive mode for calibrating images
+		for(int i = 0; i < reader->getNumImages() ; i++)
 		{
+			std::string Path_to_Write_Calib_Image = OUTPUT_IMAGE_WRITE;
+			while(true)
+			{
+				ExposureImage* I = reader->getImage(i, rect, removeGamma, removeVignette, killOverexposed);
+				cv::imshow("Image", cv::Mat(I->h, I->w, CV_32F, I->image) * (1/255.0f));
+				printf("Read image %d, time %.5f, exposure %.5fms. Rect (r): %d, remove gamma (g) %d, remove vignette (v): %d, kill overesposed (o)%d\n", \
+						I->id, I->timestamp, I->exposure_time, \
+						(int)rect, (int)removeGamma, (int)removeVignette, (int)killOverexposed);
+
+				char k;
+				if(autoPlay) k = cv::waitKey(1);
+				else k = cv::waitKey(0);
+
+				//> Write image to the defined path
+				if(k=='w' || k == 'W') {
+					std::string fileIndx = std::to_string(i);
+					std::string padded_fileName = std::string(6 - std::min(6, (int)(fileIndx.length())), '0') + fileIndx + Image_Extension;
+					Path_to_Write_Calib_Image.append(padded_fileName);
+					std::cout << "Writing image to " << Path_to_Write_Calib_Image << std::endl;
+					cv::imwrite(Path_to_Write_Calib_Image, cv::Mat(I->h, I->w, CV_32F, I->image));
+					// cv::imwrite("img.png", cv::Mat(I->h, I->w, CV_32F, I->image));
+				}
+
+				delete I;
+
+				if(k==' ') break;
+				if(k=='s' || k == 'S') {i+=30; break;};
+				if(k=='a' || k == 'A') autoPlay=!autoPlay;
+				if(k=='v' || k == 'V') removeVignette=!removeVignette;
+				if(k=='g' || k == 'G') removeGamma=!removeGamma;
+				if(k=='o' || k == 'O') killOverexposed=!killOverexposed;
+				if(k=='r' || k == 'R') rect=!rect;
+				if(autoPlay) break;
+			}
+		}
+	}
+	else {
+		if (ENABLE_PHOTO_GEO_CALIB) {
+			rect = true;
+			removeGamma = true;
+			removeVignette = true;
+		}
+
+		for(int i = 0; i < reader->getNumImages() ; i++)
+		{
+			std::string Path_to_Write_Calib_Image = OUTPUT_IMAGE_WRITE;
 			ExposureImage* I = reader->getImage(i, rect, removeGamma, removeVignette, killOverexposed);
 			cv::imshow("Image", cv::Mat(I->h, I->w, CV_32F, I->image) * (1/255.0f));
-			printf("Read image %d, time %.5f, exposure %.5fms. Rect (r): %d, remove gamma (g) %d, remove vignette (v): %d, kill overesposed (o)%d\n",
-					I->id, I->timestamp, I->exposure_time,
+			printf("Read image %d, time %.5f, exposure %.5fms. Rect (r): %d, remove gamma (g) %d, remove vignette (v): %d, kill overesposed (o)%d\n", \
+					I->id, I->timestamp, I->exposure_time, \
 					(int)rect, (int)removeGamma, (int)removeVignette, (int)killOverexposed);
 
-
 			char k;
-			if(autoPlay) k = cv::waitKey(1);
-			else k = cv::waitKey(0);
+			// if(autoPlay) k = cv::waitKey(1);
+			// else k = cv::waitKey(0);
+			k = cv::waitKey(1);
 
-			if(k=='w' || k == 'W') cv::imwrite("img.png", cv::Mat(I->h, I->w, CV_32F, I->image));
+			//> Write image to the defined path
+			// if(k=='w' || k == 'W') {
+				std::string fileIndx = std::to_string(i);
+				std::string padded_fileName = std::string(6 - std::min(6, (int)(fileIndx.length())), '0') + fileIndx + Image_Extension;
+				Path_to_Write_Calib_Image.append(padded_fileName);
+				std::cout << "Writing image to " << Path_to_Write_Calib_Image << std::endl;
+				cv::imwrite(Path_to_Write_Calib_Image, cv::Mat(I->h, I->w, CV_32F, I->image));
+				// cv::imwrite("img.png", cv::Mat(I->h, I->w, CV_32F, I->image));
+			// }
 
 			delete I;
-
-
-			if(k==' ') break;
-			if(k=='s' || k == 'S') {i+=30; break;};
-			if(k=='a' || k == 'A') autoPlay=!autoPlay;
-			if(k=='v' || k == 'V') removeVignette=!removeVignette;
-			if(k=='g' || k == 'G') removeGamma=!removeGamma;
-			if(k=='o' || k == 'O') killOverexposed=!killOverexposed;
-			if(k=='r' || k == 'R') rect=!rect;
-			if(autoPlay) break;
 		}
 	}
 
