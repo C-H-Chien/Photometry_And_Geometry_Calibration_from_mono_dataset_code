@@ -1,8 +1,8 @@
 ## Changes from the forked repository
 #### Chien. (Mar. 03. 2024): 
-1. Enalbe the use of OpenCV 4 and above <br />
+1. Enable the use of OpenCV 4 and above <br />
 2. Automatically do geometric and photometric calibration on a sequence of input images <br />
-
+3. Enable to do only a subset of images (if the subset of images are extracted in advance) <br />
 
 # Install
 

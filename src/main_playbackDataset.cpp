@@ -40,6 +40,10 @@
 #include "BenchmarkDatasetReader.h"
 #include "definitions.hpp"
 
+//> Usage for playDataset
+//  ./playDataset /path/to/dataset/sequence/     					 --> do photometric and geometric calibration for all images in the sequence
+//  ./playDataset /path/to/dataset/sequence/ /path/to/image/write/   --> do geometric calibration only and write all calibrated images in the second path
+
 int main( int argc, char** argv )
 {
 	setlocale(LC_ALL, "");
