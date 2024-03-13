@@ -93,7 +93,6 @@ PhotometricUndistorter::PhotometricUndistorter(
 	for(int i=1;i<255;i++)
 	{
 		// find val, such that Binv[val] = i.
-		// I dont care about speed for this, so do it the stupid way.
 		for(int s=1;s<255;s++)
 		{
 			if(GInv[s] <= i && GInv[s+1] >= i)
@@ -164,12 +163,12 @@ void PhotometricUndistorter::unMapImage(
 {
 	if(!validGamma && undoGamma)
 	{
-		printf("Photometric Undistorter did not load Gamma correctly. correctly. Not undoing gamma!\n");
+		printf("Photometric Undistorter did not load Gamma correctly. Not undoing gamma!\n");
 		undoGamma = false;
 	}
 	if(!validVignette && undoVignette)
 	{
-		printf("Photometric Undistorter did not load Vignette correctly. correctly. Not undoing Vignette!\n");
+		printf("Photometric Undistorter did not load Vignette correctly. Not undoing Vignette!\n");
 		undoVignette = false;
 	}
 
